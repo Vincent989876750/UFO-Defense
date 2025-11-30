@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>UFO Defense System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background layers -->
+  <div class="stars"></div>
+  <div class="grass"></div> <!-- 🌱 Grass layer -->
+
+  <!-- Score and lives -->
+  <h2 id="score">Score: 0</h2>
+  <h2 id="lives">Lives: 3</h2>
+
+  <!-- Title and description -->
+  <h1>🛡️ Patriot Missile Defense</h1>
+  <p>Click on the UFOs to shoot them down!</p>
+
+  <!-- Patriot batteries -->
+  <img src="patriot.png" alt="Patriot Battery Left" class="patriot left">
+  <img src="patriot.png" alt="Patriot Battery Right" class="patriot right">
+
+  <!-- Sounds -->
+  <audio id="launchSound" src="launch.mp3"></audio>
+  <audio id="explosionSound" src="explosion.mp3"></audio>
+  <audio id="levelUpSound" src="levelup.mp3"></audio>
+
+  <!-- Game Script -->
+  <script src="script.js"></script>
+</body>
+</html>
