@@ -50,11 +50,51 @@ function shootUFO(ufo) {
     launchMissile(ufo);
 }
 
+// --- Smoke Trail ---
+function createSmoke(x, y) {
+    const puffCount = 2 + Math.floor(Math.random() * 2); // 2–3 puffs
+    for (let i = 0; i < puffCount; i++) {
+        const smoke = document.createElement("div");
+        smoke.className = "smoke";
+
+        // Random size & opacity
+        const size = 10 + Math.random() * 10; // 10–20px
+        smoke.style.width = size + "px";
+        smoke.style.height = size + "px";
+        smoke.style.opacity = 0.3 + Math.random() * 0.4;
+
+        // Random drift
+        const offsetX = (Math.random() - 0.5) * 10; // ±5px
+        const offsetY = (Math.random() - 0.5) * 10; // ±5px
+
+        smoke.style.left = (x + offsetX) + "px";
+        smoke.style.top = (y + offsetY) + "px";
+        smoke.style.transform = "translate(-50%, -50%)";
+
+        document.body.appendChild(smoke);
+
+        // Remove after 1.5–2s
+        setTimeout(() => smoke.remove(), 1500 + Math.random() * 500);
+    }
+}
+
+
+// --- Spawn smoke at missile tail (143x170 PNG) ---
+function spawnSmokeAtMissileTail(missileX, missileY, angleDeg) {
+    const angleRad = angleDeg * Math.PI / 180;
+    const tailOffset = 0; // adjust this number until smoke aligns
+    const offsetX = -Math.cos(angleRad) * tailOffset;
+    const offsetY = -Math.sin(angleRad) * tailOffset;
+    createSmoke(missileX + offsetX, missileY + offsetY);
+}
+
+
 // --- Guided Missile ---
 function launchMissile(ufo) {
     playSound("launchSound");
 
-    const missile = document.createElement("div");
+    const missile = document.createElement("img");
+    missile.src = "missile.png";
     missile.className = "missile";
     document.body.appendChild(missile);
 
@@ -62,14 +102,10 @@ function launchMissile(ufo) {
     let missileY = window.innerHeight - 100;
     fireFromLeft = !fireFromLeft;
 
-    missile.style.left = missileX + "px";
-    missile.style.top = missileY + "px";
-
     createFlash(missileX, missileY);
 
-    const ufoRect = ufo.getBoundingClientRect();
-    let targetX = ufoRect.left + ufoRect.width / 2;
-    let targetY = ufoRect.top + ufoRect.height / 2;
+    let missileSpeed = 8;       // starting speed
+    const acceleration = 0.2;   // how much speed increases per frame
 
     const interval = setInterval(() => {
         if (gameOver || paused) {
@@ -84,8 +120,8 @@ function launchMissile(ufo) {
         }
 
         const r = ufo.getBoundingClientRect();
-        targetX = r.left + r.width / 2;
-        targetY = r.top + r.height / 2;
+        const targetX = r.left + r.width / 2;
+        const targetY = r.top + r.height / 2;
 
         const dx = targetX - missileX;
         const dy = targetY - missileY;
@@ -96,24 +132,21 @@ function launchMissile(ufo) {
             missile.remove();
             hitUFO(ufo);
         } else {
-            const speed = 15;
-            missileX += (dx / dist) * speed;
-            missileY += (dy / dist) * speed;
+            // 🚀 Accelerating speed
+            missileSpeed = Math.min(missileSpeed + acceleration, 25); // cap at 25
+
+            missileX += (dx / dist) * missileSpeed;
+            missileY += (dy / dist) * missileSpeed;
+
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
             missile.style.left = missileX + "px";
             missile.style.top = missileY + "px";
-            createSmoke(missileX, missileY);
+            missile.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+
+            spawnSmokeAtMissileTail(missileX, missileY, angle + 90);
         }
     }, 30);
-}
-
-// --- Smoke Trail ---
-function createSmoke(x, y) {
-    const smoke = document.createElement("div");
-    smoke.className = "smoke";
-    smoke.style.left = x + "px";
-    smoke.style.top = y + "px";
-    document.body.appendChild(smoke);
-    setTimeout(() => smoke.remove(), 1000);
 }
 
 // --- Muzzle Flash ---
@@ -132,53 +165,58 @@ function hitUFO(ufo) {
 
     playSound("explosionSound");
 
+    // Determine UFO type and HP
     const type = ufo.dataset.type || "scout";
     let hp = Number(ufo.dataset.hp) || (type === "heavy" ? 2 : 1);
 
     hp -= 1;
     ufo.dataset.hp = hp;
+
+    // If still alive, just flash damage
     if (hp > 0) {
         ufo.style.filter = "drop-shadow(0 0 30px orange)";
         return;
     }
 
-    ufo.style.animation = "explode 1s forwards";
-    ufo.style.filter = "drop-shadow(0 0 40px red)";
-
+    // Explosion + debris
     const r = ufo.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     const cy = r.top + r.height / 2;
-    createDebris(cx, cy);
+    createExplosion(cx, cy, ufo); // ✅ uses explosion.png + debris
 
+    // Combo + scoring after removal
     setTimeout(() => {
-        if (document.body.contains(ufo)) {
-            ufo.remove();
+        if (document.body.contains(ufo)) ufo.remove();
 
-            const now = Date.now();
-            comboCount = (now - lastHitTime < 2000) ? comboCount + 1 : 1;
-            lastHitTime = now;
+        const now = Date.now();
+        comboCount = (now - lastHitTime < 2000) ? comboCount + 1 : 1;
+        lastHitTime = now;
 
-            const basePoints = type === "heavy" ? 2 : type === "stealth" ? 2 : 1;
-            score += basePoints * comboCount;
+        const basePoints = type === "heavy" ? 2 : type === "stealth" ? 2 : type === "boss" ? 5 : 1;
+        score += basePoints * comboCount;
 
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("highScore", String(highScore));
-            }
-
-            updateHUD();
-
-            if (score % 5 === 0) {
-                increaseDifficulty();
-                playSound("levelUpSound");
-            }
-
-            if (score % 20 === 0) spawnBoss();
-
-            checkAchievements();
+        // High score persistence
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("highScore", String(highScore));
         }
+
+        updateHUD();
+
+        // Difficulty scaling
+        if (score % 5 === 0) {
+            increaseDifficulty();
+            playSound("levelUpSound");
+        }
+
+        // Boss spawn
+        if (score % 20 === 0) spawnBoss();
+
+        // Achievements
+        checkAchievements();
     }, 1000);
 }
+
 
 // --- Debris Explosion ---
 function createDebris(x, y) {
@@ -194,6 +232,277 @@ function createDebris(x, y) {
         document.body.appendChild(debris);
         setTimeout(() => debris.remove(), 1000);
     }
+}
+
+// --- Explosion PNG ---
+function createExplosion(cx, cy, ufo) {
+    // Core explosion PNG
+    const explosion = document.createElement("img");
+    explosion.src = "explosion.png";
+    explosion.className = "explosion";
+    explosion.style.position = "absolute";
+    explosion.style.left = (cx - 80) + "px";
+    explosion.style.top = (cy - 80) + "px";
+    explosion.style.width = "160px";
+    explosion.style.zIndex = 8;
+    explosion.style.filter = "drop-shadow(0 0 20px orange)";
+    document.body.appendChild(explosion);
+
+    // Flash circle
+    const flash = document.createElement("div");
+    flash.className = "explosion-flash";
+    flash.style.left = (cx - 100) + "px";
+    flash.style.top = (cy - 100) + "px";
+    document.body.appendChild(flash);
+
+    // Shockwave ring
+    const shockwave = document.createElement("div");
+    shockwave.className = "shockwave";
+    shockwave.style.left = (cx - 50) + "px";
+    shockwave.style.top = (cy - 50) + "px";
+    document.body.appendChild(shockwave);
+
+    // Sparks
+    for (let i = 0; i < 15; i++) {
+        const spark = document.createElement("div");
+        spark.className = "spark";
+        spark.style.left = cx + "px";
+        spark.style.top = cy + "px";
+        document.body.appendChild(spark);
+
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = 2 + Math.random() * 4;
+        let posX = cx, posY = cy;
+
+        const interval = setInterval(() => {
+            posX += Math.cos(angle) * speed;
+            posY += Math.sin(angle) * speed;
+            spark.style.left = posX + "px";
+            spark.style.top = posY + "px";
+        }, 30);
+
+        setTimeout(() => {
+            clearInterval(interval);
+            spark.remove();
+        }, 600);
+    }
+
+    // Remove UFO
+    if (document.body.contains(ufo)) ufo.remove();
+
+    // Cleanup
+    setTimeout(() => {
+        explosion.remove();
+        flash.remove();
+        shockwave.remove();
+    }, 1000);
+
+    // Debris particles
+    createDebris(cx, cy);
+}
+
+// --- Drone Ally (MQ-9 Reaper) ---
+const DRONE_COST = 20; // ✅ change this number to set the price
+
+function spawnDrone() {
+    // Cost check
+    if (score < DRONE_COST) {
+        alert("Not enough points to deploy MQ-9 Reaper!");
+        return;
+    }
+    score -= DRONE_COST;
+    updateHUD();
+
+    // Play drone sound (looping ambient)
+    const sound = document.getElementById("droneSound");
+    if (sound) {
+        sound.currentTime = 0;
+        sound.play();
+    }
+
+    // Create drone element
+    const drone = document.createElement("img");
+    drone.src = "drone.png"; // your MQ-9 Reaper PNG
+    drone.className = "drone";
+    drone.style.top = "120px";
+    drone.style.left = window.innerWidth / 2 + "px";
+    document.body.appendChild(drone);
+
+    // Movement: drone patrols left ↔ right
+    let direction = 1;
+    let posX = window.innerWidth / 2;
+    const moveInterval = setInterval(() => {
+        if (gameOver || paused) return;
+        posX += direction * 4; // patrol speed
+
+        // Bounce at edges
+        if (posX < 100 || posX > window.innerWidth - 200) {
+            direction *= -1;
+        }
+
+        // Always set transform based on current direction
+        if (direction === 1) {
+            drone.style.transform = "scaleX(-1)";  // facing right
+        } else {
+            drone.style.transform = "scaleX(1)";   // facing left
+        }
+
+        drone.style.left = posX + "px";
+    }, 30);
+
+    // Auto-fire missiles from drone itself
+    const fireInterval = setInterval(() => {
+        if (gameOver || paused) return;
+        const ufos = document.querySelectorAll(".ufo");
+        if (ufos.length > 0) {
+            const target = ufos[0]; // pick first UFO
+            launchDroneMissile(drone, target); // custom missile from drone
+        }
+    }, 2000);
+
+    // Drone disappears after 20s
+    setTimeout(() => {
+        clearInterval(moveInterval);
+        clearInterval(fireInterval);
+        if (document.body.contains(drone)) drone.remove();
+
+        // Stop sound when drone leaves
+        if (sound) {
+            sound.pause();
+            sound.currentTime = 0;
+        }
+    }, 20000);
+}
+
+
+// --- Drone Missile ---
+function launchDroneMissile(drone, ufo) {
+    playSound("launchSound");
+
+    const missile = document.createElement("img");
+    missile.src = "missile.png";
+    missile.className = "missile";
+    document.body.appendChild(missile);
+
+    // Start at drone’s position
+    const droneRect = drone.getBoundingClientRect();
+    let missileX = droneRect.left + droneRect.width / 2;
+    let missileY = droneRect.top + droneRect.height / 2;
+
+    missile.style.left = missileX + "px";
+    missile.style.top = missileY + "px";
+
+    const interval = setInterval(() => {
+        if (gameOver || paused) {
+            clearInterval(interval);
+            missile.remove();
+            return;
+        }
+        if (!document.body.contains(ufo)) {
+            clearInterval(interval);
+            missile.remove();
+            return;
+        }
+
+        const r = ufo.getBoundingClientRect();
+        const targetX = r.left + r.width / 2;
+        const targetY = r.top + r.height / 2;
+
+        const dx = targetX - missileX;
+        const dy = targetY - missileY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 20) {
+            clearInterval(interval);
+            missile.remove();
+            hitUFO(ufo);
+        } else {
+            const speed = 12;
+            missileX += (dx / dist) * speed;
+            missileY += (dy / dist) * speed;
+
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            missile.style.left = missileX + "px";
+            missile.style.top = missileY + "px";
+            missile.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+
+            spawnSmokeAtMissileTail(missileX, missileY, angle + 90);
+        }
+    }, 30);
+
+    // Auto-fire missiles from drone itself
+    const fireInterval = setInterval(() => {
+        if (gameOver || paused) return;
+        const ufos = document.querySelectorAll(".ufo");
+        if (ufos.length > 0) {
+            const target = ufos[0]; // pick first UFO
+            launchDroneMissile(drone, target); // custom missile from drone
+        }
+    }, 2000);
+
+    // Drone disappears after 20s
+    setTimeout(() => {
+        clearInterval(moveInterval);
+        clearInterval(fireInterval);
+        if (document.body.contains(drone)) drone.remove();
+    }, 20000);
+}
+
+
+// --- Drone Missile ---
+function launchDroneMissile(drone, ufo) {
+    playSound("launchSound");
+
+    const missile = document.createElement("img");
+    missile.src = "missile.png";
+    missile.className = "missile";
+    document.body.appendChild(missile);
+
+    // Start at drone’s position
+    const droneRect = drone.getBoundingClientRect();
+    let missileX = droneRect.left + droneRect.width / 2;
+    let missileY = droneRect.top + droneRect.height / 2;
+
+    missile.style.left = missileX + "px";
+    missile.style.top = missileY + "px";
+
+    const interval = setInterval(() => {
+        if (gameOver || paused) {
+            clearInterval(interval);
+            missile.remove();
+            return;
+        }
+        if (!document.body.contains(ufo)) {
+            clearInterval(interval);
+            missile.remove();
+            return;
+        }
+
+        const r = ufo.getBoundingClientRect();
+        const targetX = r.left + r.width / 2;
+        const targetY = r.top + r.height / 2;
+
+        const dx = targetX - missileX;
+        const dy = targetY - missileY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 20) {
+            clearInterval(interval);
+            missile.remove();
+            hitUFO(ufo);
+        } else {
+            const speed = 12;
+            missileX += (dx / dist) * speed;
+            missileY += (dy / dist) * speed;
+
+            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            missile.style.left = missileX + "px";
+            missile.style.top = missileY + "px";
+            missile.style.transform = `translate(-50%, -50%) rotate(${angle + 90}deg)`;
+
+            spawnSmokeAtMissileTail(missileX, missileY, angle + 90);
+        }
+    }, 30);
 }
 
 // --- UFO Spawner ---
