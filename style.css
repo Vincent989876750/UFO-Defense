@@ -18,7 +18,10 @@ body {
     z-index: 0;
     pointer-events: none;
 }
-@keyframes twinkle { from { opacity: 0.7; } to { opacity: 1; } }
+@keyframes twinkle { 
+    from { opacity: 0.7; } 
+    to { opacity: 1; } 
+}
 
 /* Grass background */
 .grass {
@@ -43,15 +46,20 @@ body {
     z-index: 3;
     cursor: pointer;
 }
-@keyframes flyAcross { from { left: -200px; } to { left: 100%; } }
-@keyframes hover { from { transform: translateY(0); } to { transform: translateY(-20px); } }
-@keyframes explode { from { transform: scale(1); opacity: 1; } to { transform: scale(2); opacity: 0; } }
+@keyframes flyAcross { 
+    from { left: -200px; } 
+    to { left: 100%; } 
+}
+@keyframes hover { 
+    from { transform: translateY(0); } 
+    to { transform: translateY(-20px); } 
+}
 
-/* Missile (scaled PNG) */
+/* Missile */
 .missile {
     position: fixed;
-    width: 72px;   /* scaled down from 143 */
-    height: 85px;  /* scaled down from 170 */
+    width: 72px;
+    height: 85px;
     transform-origin: center center;
     pointer-events: none;
     filter: drop-shadow(0 0 10px yellow);
@@ -64,10 +72,10 @@ body {
     background: gray;
     border-radius: 50%;
     z-index: 4;
-    animation: fadeSmoke 2s forwards;
+    animation: fadeSmoke 1.2s forwards;
 }
 @keyframes fadeSmoke {
-    from { opacity: 0.6; transform: scale(1); }
+    from { opacity: 0.5; transform: scale(1); }
     to { opacity: 0; transform: scale(2); }
 }
 
@@ -84,7 +92,7 @@ body {
 }
 @keyframes flashFade {
     from { opacity: 0.8; transform: scale(1); }
-    to { opacity: 0; transform: scale(2); opacity: 0; }
+    to { opacity: 0; transform: scale(2); }
 }
 
 /* Debris */
@@ -168,6 +176,7 @@ body {
     z-index: 2;
 }
 
+/* Drone + A-10 aircraft */
 .drone {
     position: fixed;
     width: 120px;
@@ -176,13 +185,15 @@ body {
     transition: transform 0.3s ease;
 }
 
-
-@keyframes droneBank {
-    from { transform: rotate(-5deg); }
-    to   { transform: rotate(5deg); }
+/* 30mm bullets */
+.bullet30mm {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: orange;
+    border-radius: 50%;
+    z-index: 8;
 }
-
-
 
 /* Power-ups */
 .powerup {
@@ -201,10 +212,18 @@ body {
     left: 10px;
     z-index: 5;
 }
-#score { top: 10px; color: yellow; text-shadow: 0 0 10px orange; }
-#lives { top: 40px; color: red; text-shadow: 0 0 10px darkred; }
+#score { 
+    top: 10px; 
+    color: yellow; 
+    text-shadow: 0 0 10px orange; 
+}
+#lives { 
+    top: 40px; 
+    color: red; 
+    text-shadow: 0 0 10px darkred; 
+}
 
-/* Button */
+/* Buttons */
 button {
     background-color: darkred;
     color: white;
@@ -216,8 +235,31 @@ button {
     z-index: 2;
     position: relative;
 }
-button:hover { background-color: crimson; }
+button:hover { 
+    background-color: crimson; 
+}
+
+.a10 {
+    position: fixed;
+    width: 160px;   /* longer body */
+    height: auto;   /* keep natural ratio */
+    z-index: 7;
+    pointer-events: none;
+    transition: transform 0.2s ease;
+}
 
 /* Patriot batteries */
-.patriot.left { position: fixed; bottom: 0; left: 10%; width: 200px; z-index: 4; }
-.patriot.right { position: fixed; bottom: 0; right: 10%; width: 200px; z-index: 4; }
+.patriot.left { 
+    position: fixed; 
+    bottom: 0; 
+    left: 10%; 
+    width: 200px; 
+    z-index: 4; 
+}
+.patriot.right { 
+    position: fixed; 
+    bottom: 0; 
+    right: 10%; 
+    width: 200px; 
+    z-index: 4; 
+}
