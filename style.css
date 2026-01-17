@@ -20,17 +20,17 @@ body {
 }
 @keyframes twinkle { from { opacity: 0.7; } to { opacity: 1; } }
 
-/* Grass background (use your own grass.png file) */
+/* Grass background */
 .grass {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 120px; /* adjust height */
-    background: url('grass.png'); /* ✅ replace with your own grass PNG */
+    height: 120px;
+    background: url('grass.png');
     background-repeat: repeat-x;
     background-size: cover;
-    z-index: 2; /* above stars, below UFOs */
+    z-index: 2;
     pointer-events: none;
 }
 
@@ -47,28 +47,29 @@ body {
 @keyframes hover { from { transform: translateY(0); } to { transform: translateY(-20px); } }
 @keyframes explode { from { transform: scale(1); opacity: 1; } to { transform: scale(2); opacity: 0; } }
 
-/* Missile */
+/* Missile (scaled PNG) */
 .missile {
     position: fixed;
-    width: 10px;
-    height: 30px;
-    background: red;
-    box-shadow: 0 0 10px yellow;
+    width: 72px;   /* scaled down from 143 */
+    height: 85px;  /* scaled down from 170 */
+    transform-origin: center center;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px yellow);
     z-index: 5;
 }
 
 /* Smoke trail */
 .smoke {
     position: fixed;
-    width: 15px;
-    height: 15px;
     background: gray;
     border-radius: 50%;
-    opacity: 0.6;
     z-index: 4;
-    animation: fadeSmoke 1s forwards;
+    animation: fadeSmoke 2s forwards;
 }
-@keyframes fadeSmoke { from { opacity: 0.6; transform: scale(1); } to { opacity: 0; transform: scale(2); } }
+@keyframes fadeSmoke {
+    from { opacity: 0.6; transform: scale(1); }
+    to { opacity: 0; transform: scale(2); }
+}
 
 /* Muzzle flash */
 .flash {
@@ -81,9 +82,10 @@ body {
     z-index: 6;
     animation: flashFade 0.3s forwards;
 }
-@keyframes flashFade { from { opacity: 0.8; transform: scale(1); } to { opacity: 0; transform: scale(2); } }
-
-
+@keyframes flashFade {
+    from { opacity: 0.8; transform: scale(1); }
+    to { opacity: 0; transform: scale(2); opacity: 0; }
+}
 
 /* Debris */
 .debris {
@@ -101,6 +103,61 @@ body {
     to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.5); }
 }
 
+/* Explosion PNG */
+.explosion {
+    pointer-events: none;
+    animation: explodeAnim 1s forwards;
+    filter: drop-shadow(0 0 20px orange);
+}
+@keyframes explodeAnim {
+    from { transform: scale(0.5); opacity: 1; }
+    to { transform: scale(1.5); opacity: 0; }
+}
+
+/* Explosion flash */
+.explosion-flash {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, white 0%, yellow 40%, transparent 100%);
+    border-radius: 50%;
+    opacity: 0.8;
+    z-index: 7;
+    animation: flashFade 0.5s forwards;
+}
+
+/* Shockwave ring */
+.shockwave {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 3px solid orange;
+    border-radius: 50%;
+    opacity: 0.7;
+    z-index: 7;
+    animation: shockwaveExpand 1s forwards;
+}
+@keyframes shockwaveExpand {
+    from { transform: scale(1); opacity: 0.7; }
+    to { transform: scale(3); opacity: 0; }
+}
+
+/* Sparks */
+.spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: yellow;
+    border-radius: 50%;
+    z-index: 9;
+    opacity: 0.9;
+    animation: sparkFade 0.6s forwards;
+}
+@keyframes sparkFade {
+    from { opacity: 0.9; }
+    to { opacity: 0; }
+}
+
 /* Meteor background events */
 .meteor {
     position: fixed;
@@ -110,6 +167,22 @@ body {
     border-radius: 50%;
     z-index: 2;
 }
+
+.drone {
+    position: fixed;
+    width: 120px;
+    height: 60px;
+    z-index: 6;
+    transition: transform 0.3s ease;
+}
+
+
+@keyframes droneBank {
+    from { transform: rotate(-5deg); }
+    to   { transform: rotate(5deg); }
+}
+
+
 
 /* Power-ups */
 .powerup {
